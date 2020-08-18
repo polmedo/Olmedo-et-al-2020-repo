@@ -108,4 +108,5 @@ seg9<- seg8[, c(1,15,2,3,4,5,14,6,7,8,9,10,16,17,11,12,13)]
 Periodo_hora<- ifelse(seg9$Hora < "12:40:00", 1, ifelse((seg9$Hora >= "12:40:00") & (seg9$Hora < "15:20:00"), 2, 3))
 
 seg10<- data.frame(add_column(seg9, Periodo_hora, .after = 3))
+write.csv(seg10, "/data/seg_clean.csv", row.names = FALSE)
 
