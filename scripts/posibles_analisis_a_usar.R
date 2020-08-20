@@ -13,10 +13,16 @@ seg %>% group_by(Codigo_vuelo) %>% summarise(n=n()) %>% summarise(median(n))
 #Calcular la secuencia de plantas seguida por el polinizador
 
 Codigo_planta<- as.numeric(seg_subset$Planta)
-seg_subset<- add_column(seg_subset, Codigo_planta, .after = 12)
-seg2<- transform(seg_subset, revisita= ave(Codigo_planta, rleid(Codigo_vuelo, Codigo_planta), FUN = seq_along))
-#UNA ALTERNATIVA QUE PARECE TENER MÁS SENTIDO Y ES MÁS SENCILLA A LO ANTERIOR
-seg3<- seg_subset %>% mutate(revisita_binario= ifelse(Planta == lag(Planta), 1, 0))
+seg2<- add_column(seg_subset, Codigo_planta, .after = 12)
+seg3<- transform(seg2, revisita= ave(Codigo_planta, rleid(Codigo_vuelo, Codigo_planta), FUN = seq_along))
+#UNA ALTERNATIVA QUE PARECE TENER MÁS SENTIDO Y ES MÁS SENCILLA A LO ANTERIOR (vuelos con
+#una sola visita son mandados a NA)
+seg2<- seg_subset %>% group_by(Codigo_vuelo) %>% mutate(revisita_binario= ifelse(Planta == lag(Planta), 1, 0))
 
-#algo me falla en el t-test, me da este mensaje de error: Error: Can't combine `Fecha` <factor<fe2dc>> and `Periodo_fecha` <integer>.
-p<- seg3 %>% group_by(Polinizador) %>% t.test(revisita_binario~Periodo_fecha)
+#Para ver si el periodo 1 o el periodo 2 influye sobre la decisión de ir a la misma sp de
+#planta o no, hago una tabla de contingencia y un test de Fisher??
+#Aquí va el fisher más simple sin separar por sp de polinizador y asumiendo que cada
+#cambio de planta es independiente del anterior, sin tener en cuenta si una secuencia es de
+#2 plantas o 50 
+tab<- table(seg2$Periodo_fecha, seg2$revisita_binario)
+fisher.test(tab)
