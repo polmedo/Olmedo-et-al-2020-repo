@@ -21,8 +21,15 @@ head(seg_table)
 #que lo puedes sacar de los cuadrados.
 library(lme4)
 
-m1<-lmer(n_plant_sps ~ Periodo_fecha + (1|Polinizador),  data=seg_table)
+m1<-lmer(n_plant_sps ~ Periodo_fecha + (1|Bosque) + (1|Polinizador), data=seg_table)
 summary(m1)
+car::Anova(m1)
+
+p1 <- ggplot(seg_table, aes(x=Bosque, y=n_plant_sps, fill=Polinizador)) + 
+  geom_boxplot() + xlim(0, 7) + ylab("Visited plant species richness") + xlab("Site")
+
+p1 + facet_wrap(~Periodo_fecha)
+
 
 
 
@@ -54,3 +61,10 @@ seg2<- seg_subset %>% group_by(Codigo_vuelo) %>% mutate(revisita_binario= ifelse
 #2 plantas o 50 
 tab<- table(seg2$Periodo_fecha, seg2$revisita_binario)
 fisher.test(tab)
+
+
+#yo aqui haria un glm con distribucion binomial y de nuevo poner diversidad de especies presentes como covariable
+
+m3<-glmer(revisita_binario ~ Periodo_fecha + (1|Bosque) + (1|Polinizador), family="binomial", data=seg2)
+summary(m3)
+

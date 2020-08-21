@@ -8,7 +8,7 @@ seg_subset<-droplevels(seg_subset)
 sites <- unique(seg_subset$Bosque)
 
 
-out.site <- data.frame(Site_id = NA, Periodo=NA, Polinizador=NA, species.pl=NA)
+out.site <- data.frame(Site_id = NA, Periodo=NA, Polinizador=NA, species.pl=NA, shannon=NA)
 
 
 webs <- list()
@@ -44,7 +44,7 @@ for(i in 1:length(sites)){
       out.site[n + 1,1] <- as.character(sites[i])
       out.site[n + 1,2] <- as.character(periodo[j])
       out.site[n + 1,3] <- as.character(polinizador[k])
-      out.site[n + 1,4] <- c(ntw[20])
+      out.site[n + 1,4:5] <- c(ntw[20], ntw[16])
      
       
       
@@ -53,4 +53,11 @@ for(i in 1:length(sites)){
 str(out.site)
 head(out.site)
 out.site
+
+
+out.site2<-out.site[-1,]
+
+m2<-lmer(shannon ~ Periodo + (1|Site_id) + (1|Polinizador), data=out.site2)
+summary(m2)
+car::Anova(m2)
 

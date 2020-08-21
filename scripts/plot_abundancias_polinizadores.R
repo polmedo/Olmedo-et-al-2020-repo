@@ -22,7 +22,9 @@ head(seg_subset2)
 
 
 pl<-ggplot(seg_subset2, aes(x=Fecha, y=n, fill=Polinizador)) +
-  geom_bar(stat = "identity",  position="dodge")
+  geom_bar(stat = "identity",  position="dodge") +scale_fill_brewer(palette="Set3") +
+  geom_smooth(aes(x=Fecha, y=n, colour=Polinizador), se=F, method="loess", lwd=0.7) +
+  scale_colour_brewer(palette="Set3") 
 
 
-pl+scale_color_brewer(palette="Dark2")
+pl
