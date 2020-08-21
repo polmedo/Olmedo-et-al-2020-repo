@@ -1,5 +1,6 @@
 library(tibble)
 library(data.table)
+library(plyr)
 library(dplyr)
 
 seg<- read.csv("./data/seg_clean.csv")
@@ -11,6 +12,10 @@ seg_subset<- subset(seg, Polinizador %in% c("Bombus hortorum", "Bombus lapidariu
 
 
 #calcular numero de especies de plantas diferentes visitadas en cada vuelo
+#algunos vuelos aparecen duplicados por estar a caballo entre dos periodos de hora
+#crea 344 líneas cuando deberían ser 332:
+#length(unique(seg_subset$Codigo_vuelo))
+#no sé cómo solucionarlo, se me ocurre quitar el periodo_hora del ddply, pero ya no se podría usar para otros análisis
 seg_table <- ddply(seg_subset, c("Periodo_fecha", "Periodo_hora","Bosque","Codigo_vuelo", "Polinizador"),
                    summarise,
                      n_plant_sps = n_distinct(Planta))
