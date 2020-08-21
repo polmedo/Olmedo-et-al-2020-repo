@@ -72,4 +72,6 @@ fisher.test(tab)
 
 m3<-glmer(revisita_binario ~ Periodo_fecha + (1|Bosque) + (1|Polinizador), family="binomial", data=seg2)
 summary(m3)
+library(effects)
+plot(allEffects(m3))
 
