@@ -69,9 +69,15 @@ fisher.test(tab)
 
 
 #yo aqui haria un glm con distribucion binomial y de nuevo poner diversidad de especies presentes como covariable
-
+str(seg2)
+seg2$Periodo_fecha<-as.factor(seg2$Periodo_fecha)
+seg2$Bosque<-as.factor(seg2$Bosque)
 m3<-glmer(revisita_binario ~ Periodo_fecha + (1|Bosque) + (1|Polinizador), family="binomial", data=seg2)
 summary(m3)
 library(effects)
 plot(allEffects(m3))
+
+
+ggplot(seg2, aes(x=Periodo_fecha, y=revisita_binario, fill=Periodo_fecha)) + 
+  geom_boxplot()
 
