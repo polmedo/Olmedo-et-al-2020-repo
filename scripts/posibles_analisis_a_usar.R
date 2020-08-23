@@ -21,9 +21,12 @@ seg_table <- ddply(seg_subset, c("Periodo_fecha", "Periodo_hora","Bosque","Codig
                      n_plant_sps = n_distinct(Planta))
 
 head(seg_table)
-
+str(seg_table)
 #aqui estaria bien meter como covariable la diversidad total de plantas presentes en cada periodo,
 #que lo puedes sacar de los cuadrados.
+seg_table$Periodo_fecha<-as.factor(seg_table$Periodo_fecha)
+seg_table$Bosque<-as.factor(seg_table$Bosque)
+
 library(lme4)
 
 m1<-lmer(n_plant_sps ~ Periodo_fecha + (1|Bosque) + (1|Polinizador), data=seg_table)
