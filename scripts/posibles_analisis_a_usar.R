@@ -33,7 +33,12 @@ library(tidyr)
 library(vegan)
 
 cuad<- read.csv("./data/cuad_clean.csv")
-cuad_subset<- cuad %>% group_by(periodo, Bosque, sp) %>% summarise(abundancia = sum(as.numeric(flores)))
+cuad$flores<- as.numeric(as.character(cuad$flores))
+cuad$escapos<- as.numeric(as.character(cuad$escapos))
+cuad$flores[is.na(cuad$flores)]<- 0
+cuad$escapos[is.na(cuad$escapos)]<- 0
+cuad$flores<- ifelse(cuad$flores == 0, cuad$escapos, cuad$flores)
+cuad_subset<- cuad %>% group_by(periodo, Bosque, sp) %>% summarise(abundancia = sum(flores))
 cuad_subset2<- cuad_subset %>% replace_with_na(replace = list(sp = "")) %>% drop_na(sp)
 cuad_wide<- spread(cuad_subset2, sp, abundancia)
 cuad_wide[is.na(cuad_wide)]<- 0
