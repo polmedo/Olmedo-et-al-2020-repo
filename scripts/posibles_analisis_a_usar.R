@@ -32,8 +32,8 @@ library(naniar)
 library(tidyr)
 library(vegan)
 
+cuad<- read.csv("./data/cuad_clean.csv")
 cuad_subset<- cuad %>% group_by(periodo, Bosque, sp) %>% summarise(abundancia = sum(as.numeric(flores)))
-cuad_subset$sp<- as.character(cuad_subset$sp)
 cuad_subset2<- cuad_subset %>% replace_with_na(replace = list(sp = "")) %>% drop_na(sp)
 cuad_wide<- spread(cuad_subset2, sp, abundancia)
 cuad_wide[is.na(cuad_wide)]<- 0
@@ -43,8 +43,8 @@ seg_shannon<- merge(seg_table, key_shannon)
 
 
 library(lme4)
-
-m1<-lmer(n_plant_sps ~ Periodo_fecha + (1|Bosque) + (1|Polinizador), data=seg_table)
+#???? la covariable de diversidad es de efecto fijo y va así en el modelo?
+m1<-lmer(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), data=seg_shannon)
 summary(m1)
 car::Anova(m1)
 
