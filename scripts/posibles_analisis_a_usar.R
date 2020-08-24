@@ -27,6 +27,21 @@ str(seg_table)
 seg_table$Periodo_fecha<-as.factor(seg_table$Periodo_fecha)
 seg_table$Bosque<-as.factor(seg_table$Bosque)
 
+#Índice de Shannon para meter como covariable
+library(naniar)
+library(tidyr)
+library(vegan)
+
+cuad_subset<- cuad %>% group_by(periodo, Bosque, sp) %>% summarise(abundancia = sum(as.numeric(flores)))
+cuad_subset$sp<- as.character(cuad_subset$sp)
+cuad_subset2<- cuad_subset %>% replace_with_na(replace = list(sp = "")) %>% drop_na(sp)
+cuad_wide<- spread(cuad_subset2, sp, abundancia)
+cuad_wide[is.na(cuad_wide)]<- 0
+shannon<- diversity(cuad_wide[-c(1:2)])
+key_shannon<- cbind(Periodo_fecha = cuad_wide$periodo, Bosque = cuad_wide[2], shannon = shannon)
+seg_shannon<- merge(seg_table, key_shannon)
+
+
 library(lme4)
 
 m1<-lmer(n_plant_sps ~ Periodo_fecha + (1|Bosque) + (1|Polinizador), data=seg_table)

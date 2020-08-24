@@ -1,4 +1,4 @@
-cuad_ainhoa<-read.csv("data/cuadrados.csv")
+cuad_ainhoa<-read.csv("./data/cuadrados.csv")
 xycuad<- data.frame(unique(cuad_ainhoa$X.x.y.))
 
 #comprobar cuántos días de muestreo hay para cada cuadradito para confirmar por ej. si 10.2 es 10.20 o 10.02
