@@ -6,27 +6,6 @@ library(dplyr)
 seg<- read.csv("./data/seg_clean.csv")
 seg_subset<- subset(seg, Polinizador %in% c("Bombus hortorum", "Bombus lapidarius", "Bombus pratorum", "Bombus pascuorum", "Bombus terrestris", "Sphaerophoria scripta"))
 
-# #Calcular la media y la mediana de plantas visitadas en cada seguimiento
-# seg %>% group_by(Codigo_vuelo) %>% summarise(n=n()) %>% summarise(mean(n))
-# seg %>% group_by(Codigo_vuelo) %>% summarise(n=n()) %>% summarise(median(n))
-
-
-#calcular numero de especies de plantas diferentes visitadas en cada vuelo
-#algunos vuelos aparecen duplicados por estar a caballo entre dos periodos de hora
-#crea 344 líneas cuando deberían ser 332:
-#length(unique(seg_subset$Codigo_vuelo))
-#no sé cómo solucionarlo, se me ocurre quitar el periodo_hora del ddply, pero ya no se podría usar para otros análisis
-seg_table <- ddply(seg_subset, c("Periodo_fecha", "Periodo_hora","Bosque","Codigo_vuelo", "Polinizador"),
-                   summarise,
-                     n_plant_sps = n_distinct(Planta))
-
-head(seg_table)
-str(seg_table)
-#aqui estaria bien meter como covariable la diversidad total de plantas presentes en cada periodo,
-#que lo puedes sacar de los cuadrados.
-seg_table$Periodo_fecha<-as.factor(seg_table$Periodo_fecha)
-seg_table$Bosque<-as.factor(seg_table$Bosque)
-
 #Índice de Shannon para meter como covariable
 library(naniar)
 library(tidyr)
@@ -44,12 +23,36 @@ cuad_wide<- spread(cuad_subset2, sp, abundancia)
 cuad_wide[is.na(cuad_wide)]<- 0
 shannon<- diversity(cuad_wide[-c(1:2)])
 key_shannon<- cbind(Periodo_fecha = cuad_wide$periodo, Bosque = cuad_wide[2], shannon = shannon)
-seg_shannon<- merge(seg_table, key_shannon)
+seg_shannon<- merge(seg_subset, key_shannon)
+
+#plantas visitadas en cada vuelo para el offset
+seg_subset2<- seg_shannon %>% group_by(Codigo_vuelo) %>% mutate(visitas_por_vuelo = n())
+
+# #Calcular la media y la mediana de plantas visitadas en cada seguimiento
+# seg %>% group_by(Codigo_vuelo) %>% summarise(n=n()) %>% summarise(mean(n))
+# seg %>% group_by(Codigo_vuelo) %>% summarise(n=n()) %>% summarise(median(n))
+
+
+#calcular numero de especies de plantas diferentes visitadas en cada vuelo
+#algunos vuelos aparecen duplicados por estar a caballo entre dos periodos de hora
+#crea 344 líneas cuando deberían ser 332:
+#length(unique(seg_subset$Codigo_vuelo))
+#no sé cómo solucionarlo, se me ocurre quitar el periodo_hora del ddply, pero ya no se podría usar para otros análisis
+seg_table <- ddply(seg_subset2, c("Periodo_fecha", "Periodo_hora","Bosque","Codigo_vuelo", "Polinizador", "visitas_por_vuelo"),
+                   summarise,
+                     n_plant_sps = n_distinct(Planta))
+
+head(seg_table)
+str(seg_table)
+#aqui estaria bien meter como covariable la diversidad total de plantas presentes en cada periodo,
+#que lo puedes sacar de los cuadrados.
+seg_table$Periodo_fecha<-as.factor(seg_table$Periodo_fecha)
+seg_table$Bosque<-as.factor(seg_table$Bosque)
 
 
 library(lme4)
-#???? la covariable de diversidad es de efecto fijo y va así en el modelo?
-m1<-lmer(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), data=seg_shannon)
+#???? la covariable de diversidad se coloca así?
+m1<-lmer(n_plant_sps ~ Periodo_fecha + (1|shannon) + (1|Bosque) + (1|Polinizador), data=seg_table)
 summary(m1)
 car::Anova(m1)
 
@@ -63,7 +66,7 @@ p1 + facet_wrap(~Periodo_fecha)
 
 #calcular media y desviacion de este numero de especies de plantas visitadas por especie de polinizador y periodo
 
-seg_table2 <- ddply(seg_table, c("Periodo_fecha", "Bosque", "Polinizador"), 
+seg_table2 <- ddply(seg_shannon, c("Periodo_fecha", "Bosque", "Polinizador"), 
                     summarise,
                    mean_plant_sps = mean(n_plant_sps),
                    stdev= sd(n_plant_sps))
@@ -75,12 +78,13 @@ head(seg_table2)
 
 #Calcular la secuencia de plantas seguida por el polinizador
 
-Codigo_planta<- as.numeric(seg_subset$Planta)
-seg2<- add_column(seg_subset, Codigo_planta, .after = 12)
-seg3<- transform(seg2, revisita= ave(Codigo_planta, rleid(Codigo_vuelo, Codigo_planta), FUN = seq_along))
+#Codigo_planta<- as.numeric(seg_subset$Planta)
+#seg2<- add_column(seg_subset, Codigo_planta, .after = 12)
+#seg3<- transform(seg2, revisita= ave(Codigo_planta, rleid(Codigo_vuelo, Codigo_planta), FUN = seq_along))
+
 #UNA ALTERNATIVA QUE PARECE TENER MÁS SENTIDO Y ES MÁS SENCILLA A LO ANTERIOR (vuelos con
 #una sola visita son mandados a NA)
-seg2<- seg_subset %>% group_by(Codigo_vuelo) %>% mutate(revisita_binario= ifelse(Planta == lag(Planta), 1, 0))
+seg2<- seg_subset2 %>% group_by(Codigo_vuelo) %>% mutate(revisita_binario= ifelse(Planta == lag(Planta), 1, 0))
 
 #Para ver si el periodo 1 o el periodo 2 influye sobre la decisión de ir a la misma sp de
 #planta o no, hago una tabla de contingencia y un test de Fisher??
@@ -95,7 +99,10 @@ fisher.test(tab)
 str(seg2)
 seg2$Periodo_fecha<-as.factor(seg2$Periodo_fecha)
 seg2$Bosque<-as.factor(seg2$Bosque)
-m3<-glmer(revisita_binario ~ Periodo_fecha + (1|Bosque) + (1|Polinizador), family="binomial", data=seg2)
+m3<-glmer(revisita_binario ~ Periodo_fecha + (1|shannon) + (1|Bosque) + (1|Polinizador), offset = visitas_por_vuelo, family="binomial", data=seg2)
+#ESTA FUNCIÓN DEVUELVE ERROR
+#Error in (function (fr, X, reTrms, family, nAGQ = 1L, verbose = 0L, maxit = 100L,  : 
+#(maxstephalfit) PIRLS step-halvings failed to reduce deviance in pwrssUpdate
 summary(m3)
 library(effects)
 plot(allEffects(m3))
