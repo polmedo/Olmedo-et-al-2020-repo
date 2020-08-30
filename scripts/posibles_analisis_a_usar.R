@@ -2,6 +2,7 @@ library(tibble)
 library(data.table)
 library(plyr)
 library(dplyr)
+library(ggplot2)
 
 seg<- read.csv("./data/seg_clean.csv")
 seg_subset<- subset(seg, Polinizador %in% c("Bombus hortorum", "Bombus lapidarius", "Bombus pratorum", "Bombus pascuorum", "Bombus terrestris", "Sphaerophoria scripta"))
@@ -38,10 +39,9 @@ seg_subset2<- seg_shannon %>% group_by(Codigo_vuelo) %>% mutate(visitas_por_vuel
 #crea 344 líneas cuando deberían ser 332:
 #length(unique(seg_subset$Codigo_vuelo))
 #no sé cómo solucionarlo, se me ocurre quitar el periodo_hora del ddply, pero ya no se podría usar para otros análisis
-seg_table <- ddply(seg_subset2, c("Periodo_fecha", "Periodo_hora","Bosque","Codigo_vuelo", "Polinizador", "visitas_por_vuelo"),
+seg_table <- ddply(seg_subset2, c("Periodo_fecha", "Periodo_hora","Bosque","Codigo_vuelo", "Polinizador", "shannon", "visitas_por_vuelo"),
                    summarise,
                      n_plant_sps = n_distinct(Planta))
-
 head(seg_table)
 str(seg_table)
 #aqui estaria bien meter como covariable la diversidad total de plantas presentes en cada periodo,
@@ -52,7 +52,7 @@ seg_table$Bosque<-as.factor(seg_table$Bosque)
 
 library(lme4)
 #???? la covariable de diversidad se coloca así?
-m1<-lmer(n_plant_sps ~ Periodo_fecha + (1|shannon) + (1|Bosque) + (1|Polinizador), data=seg_table)
+m1<-lmer(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), data=seg_table)
 summary(m1)
 car::Anova(m1)
 
@@ -61,12 +61,13 @@ p1 <- ggplot(seg_table, aes(x=Bosque, y=n_plant_sps, fill=Polinizador)) +
 
 p1 + facet_wrap(~Periodo_fecha)
 
-
+#Error: Discrete value supplied to continuous scale --- he visto que el error 
+#está en el xlim, si se quita ya no da error, pero no sé cómo solucionarlo con el xlim
 
 
 #calcular media y desviacion de este numero de especies de plantas visitadas por especie de polinizador y periodo
 
-seg_table2 <- ddply(seg_shannon, c("Periodo_fecha", "Bosque", "Polinizador"), 
+seg_table2 <- ddply(seg_table, c("Periodo_fecha", "Bosque", "Polinizador"), 
                     summarise,
                    mean_plant_sps = mean(n_plant_sps),
                    stdev= sd(n_plant_sps))
@@ -91,15 +92,15 @@ seg2<- seg_subset2 %>% group_by(Codigo_vuelo) %>% mutate(revisita_binario= ifels
 #Aquí va el fisher más simple sin separar por sp de polinizador y asumiendo que cada
 #cambio de planta es independiente del anterior, sin tener en cuenta si una secuencia es de
 #2 plantas o 50 
-tab<- table(seg2$Periodo_fecha, seg2$revisita_binario)
-fisher.test(tab)
+#tab<- table(seg2$Periodo_fecha, seg2$revisita_binario)
+#fisher.test(tab)
 
 
 #yo aqui haria un glm con distribucion binomial y de nuevo poner diversidad de especies presentes como covariable
 str(seg2)
 seg2$Periodo_fecha<-as.factor(seg2$Periodo_fecha)
 seg2$Bosque<-as.factor(seg2$Bosque)
-m3<-glmer(revisita_binario ~ Periodo_fecha + (1|shannon) + (1|Bosque) + (1|Polinizador), offset = visitas_por_vuelo, family="binomial", data=seg2)
+m3<-glmer(revisita_binario ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), offset = visitas_por_vuelo, family="binomial", data=seg2)
 #ESTA FUNCIÓN DEVUELVE ERROR
 #Error in (function (fr, X, reTrms, family, nAGQ = 1L, verbose = 0L, maxit = 100L,  : 
 #(maxstephalfit) PIRLS step-halvings failed to reduce deviance in pwrssUpdate
