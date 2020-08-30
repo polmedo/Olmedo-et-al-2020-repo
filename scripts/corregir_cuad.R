@@ -229,17 +229,12 @@ head(cuad5)
 colnames(cuad5)<-c("Fecha", "Bosque", "xy", "sp", "flores", "escapos","observaciones", "periodo", "x", "y")
 head(cuad5)
 
-#calcular numero especies por subcuadrado
-library(dplyr)
+#corregir columna de flores con escapos
+cuad5$flores<- as.numeric(as.character(cuad5$flores))
+cuad5$escapos<- as.numeric(as.character(cuad5$escapos))
+cuad5$flores[is.na(cuad5$flores)]<- 0
+cuad5$escapos[is.na(cuad5$escapos)]<- 0
+cuad5$flores<- ifelse(cuad5$flores == 0, cuad5$escapos, cuad5$flores)
 
-
-sp.rich<-cuad5 %>% group_by(Bosque, xy, x, y) %>% summarize(count=n())
-
-sp.rich2<-as.data.frame(sp.rich)
-str(sp.rich2)
-head(sp.rich2)
-
-library(ggplot2)
-p1<-ggplot(sp.rich2, aes(x = x, y = y, fill = count)) + geom_tile()
-p1+facet_wrap(~Bosque)
+write.csv(cuad5, "./data/cuad_clean.csv", row.names = FALSE)
 

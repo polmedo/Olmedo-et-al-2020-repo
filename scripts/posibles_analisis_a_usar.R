@@ -13,11 +13,6 @@ library(tidyr)
 library(vegan)
 
 cuad<- read.csv("./data/cuad_clean.csv")
-cuad$flores<- as.numeric(as.character(cuad$flores))
-cuad$escapos<- as.numeric(as.character(cuad$escapos))
-cuad$flores[is.na(cuad$flores)]<- 0
-cuad$escapos[is.na(cuad$escapos)]<- 0
-cuad$flores<- ifelse(cuad$flores == 0, cuad$escapos, cuad$flores)
 cuad_subset<- cuad %>% group_by(periodo, Bosque, sp) %>% summarise(abundancia = sum(flores))
 cuad_subset2<- cuad_subset %>% replace_with_na(replace = list(sp = "")) %>% drop_na(sp)
 cuad_wide<- spread(cuad_subset2, sp, abundancia)
@@ -44,14 +39,14 @@ seg_table <- ddply(seg_subset2, c("Periodo_fecha", "Periodo_hora","Bosque","Codi
                      n_plant_sps = n_distinct(Planta))
 head(seg_table)
 str(seg_table)
-#aqui estaria bien meter como covariable la diversidad total de plantas presentes en cada periodo,
-#que lo puedes sacar de los cuadrados.
+
+
 seg_table$Periodo_fecha<-as.factor(seg_table$Periodo_fecha)
 seg_table$Bosque<-as.factor(seg_table$Bosque)
 
 
 library(lme4)
-#???? la covariable de diversidad se coloca así?
+
 m1<-lmer(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), data=seg_table)
 summary(m1)
 car::Anova(m1)
@@ -63,6 +58,22 @@ p1 + facet_wrap(~Periodo_fecha)
 
 #Error: Discrete value supplied to continuous scale --- he visto que el error 
 #está en el xlim, si se quita ya no da error, pero no sé cómo solucionarlo con el xlim
+
+
+#Diferencias de diversidad de plantas entre los dos períodos
+key_shannon$Bosque<- as.factor(key_shannon$Bosque)
+shannon_wide<- key_shannon %>%
+  pivot_wider(names_from = Periodo_fecha, values_from=shannon, names_prefix="periodo")
+
+t_test_shannon<- t.test(shannon_wide$periodo1, shannon_wide$periodo2, paired=TRUE)
+t_test_shannon
+
+p2<- ggplot(key_shannon, aes(x=Periodo_fecha, y=shannon, color=Bosque)) + 
+  geom_point() + geom_line(aes(group=Bosque)) + 
+  scale_color_discrete(name = "Plot") + xlab("Period") + ylab("Shannon index")
+
+
+
 
 
 #calcular media y desviacion de este numero de especies de plantas visitadas por especie de polinizador y periodo
