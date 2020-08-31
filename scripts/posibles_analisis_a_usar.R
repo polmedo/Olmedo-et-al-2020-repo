@@ -91,7 +91,7 @@ pl2<- ggplot(seg_table2, aes(x = Periodo_fecha, y = mean_plant_sps, color=Polini
   theme_bw() + theme(axis.title   = element_text(face  = "bold")) +
   ylab("Mean visitated plant spp") + xlab("Period")
 
-pl1 + facet_wrap(~Bosque)
+pl2 + facet_wrap(~Bosque)
 
 #Diferencias de diversidad de plantas entre los dos períodos
 key_shannon$Bosque<- as.factor(key_shannon$Bosque)
