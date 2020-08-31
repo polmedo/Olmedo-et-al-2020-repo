@@ -60,6 +60,39 @@ p1 + facet_wrap(~Periodo_fecha)
 #está en el xlim, si se quita ya no da error, pero no sé cómo solucionarlo con el xlim
 
 
+#calcular media y desviacion de este numero de especies de plantas visitadas por especie de polinizador y periodo
+
+seg_table2 <- ddply(seg_table, c("Periodo_fecha", "Bosque", "Polinizador"), 
+                    summarise,
+                    mean_plant_sps = mean(n_plant_sps),
+                    stdev= sd(n_plant_sps))
+
+head(seg_table2)
+
+#Grid de plots con media y sd para cada polinizador y cada bosque
+#Pensaba poner alguno de estos para mostrar cómo alguna sp cambia más, aunque
+#no sé si queda del todo bien. ¿Crees que debería quedarme con alguno?
+seg_table2$lower<- (seg_table2$mean_plant_sps - seg_table2$stdev)
+seg_table2$higher<- (seg_table2$mean_plant_sps + seg_table2$stdev)
+
+pl1<- ggplot(seg_table2, aes(x = Periodo_fecha, y = mean_plant_sps)) +
+  geom_errorbar(aes(ymin = lower, ymax = higher), width = 0.10, size  = 0.5) +
+  geom_point(shape = 20, size  = 1) +
+  theme_bw() +
+  theme(axis.title   = element_text(face  = "bold")) +
+  ylab("Mean visitated plant spp") + xlab("Period")
+pl1 + facet_grid(Bosque~Polinizador)
+#O mejor este, sin tantas gráficas
+pl2<- ggplot(seg_table2, aes(x = Periodo_fecha, y = mean_plant_sps, color=Polinizador)) +
+  geom_errorbar(aes(ymin = lower, ymax = higher), 
+                position = position_dodge2(width=0.2), width = 0.5, size  = 0.5) +
+  geom_point(shape = 20, size  = 1, 
+             position = position_dodge2(width = 0.5, padding = 0.5)) +
+  theme_bw() + theme(axis.title   = element_text(face  = "bold")) +
+  ylab("Mean visitated plant spp") + xlab("Period")
+
+pl1 + facet_wrap(~Bosque)
+
 #Diferencias de diversidad de plantas entre los dos períodos
 key_shannon$Bosque<- as.factor(key_shannon$Bosque)
 shannon_wide<- key_shannon %>%
@@ -72,18 +105,6 @@ p2<- ggplot(key_shannon, aes(x=Periodo_fecha, y=shannon, color=Bosque)) +
   geom_point() + geom_line(aes(group=Bosque)) + 
   scale_color_discrete(name = "Plot") + xlab("Period") + ylab("Shannon index")
 
-
-
-
-
-#calcular media y desviacion de este numero de especies de plantas visitadas por especie de polinizador y periodo
-
-seg_table2 <- ddply(seg_table, c("Periodo_fecha", "Bosque", "Polinizador"), 
-                    summarise,
-                   mean_plant_sps = mean(n_plant_sps),
-                   stdev= sd(n_plant_sps))
-
-head(seg_table2)
 
 #esto si quieres lo hablamos un dia.
 
