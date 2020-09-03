@@ -140,7 +140,7 @@ seg2<- seg_subset2 %>% group_by(Codigo_vuelo) %>% mutate(revisita_binario= ifels
 str(seg2)
 seg2$Periodo_fecha<-as.factor(seg2$Periodo_fecha)
 seg2$Bosque<-as.factor(seg2$Bosque)
-m3<-glmer(revisita_binario ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), offset = visitas_por_vuelo, family="binomial", data=seg2)
+m3<-glmer(revisita_binario ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), family="binomial", data=seg2)
 #ESTA FUNCIÓN DEVUELVE ERROR
 #Error in (function (fr, X, reTrms, family, nAGQ = 1L, verbose = 0L, maxit = 100L,  : 
 #(maxstephalfit) PIRLS step-halvings failed to reduce deviance in pwrssUpdate
