@@ -51,10 +51,18 @@ m1<-lmer(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), d
 summary(m1)
 car::Anova(m1)
 
-p1 <- ggplot(seg_table, aes(x=Bosque, y=n_plant_sps, fill=Polinizador)) + 
-  geom_boxplot() + xlim(0, 7) + ylab("Visited plant species richness") + xlab("Site")
+p1 <- ggplot(seg_table, aes(x=Bosque, y=n_plant_sps, color=Polinizador))
 
-p1 + facet_wrap(~Periodo_fecha)
+label<- c("First period", "Second period")
+names(label)<- c("1", "2")
+
+p1 + geom_boxplot() + coord_cartesian(ylim=c(0, 6.5)) + 
+  facet_wrap(~Periodo_fecha, labeller = labeller(Periodo_fecha=label)) + 
+  labs(color="Pollinator") + ylab("Visited plant species richness") + xlab("Site") + 
+  theme(axis.title = element_text(face = "bold", size = 9), 
+        legend.title = element_text(face = "bold"), strip.background = element_blank(), 
+        strip.text = element_text(face = "bold")) + 
+  scale_y_continuous(expand=c(0,0))
 
 #Error: Discrete value supplied to continuous scale --- he visto que el error 
 #está en el xlim, si se quita ya no da error, pero no sé cómo solucionarlo con el xlim
@@ -139,7 +147,8 @@ m3<-glmer(revisita_binario ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizad
 summary(m3)
 library(effects)
 plot(allEffects(m3))
-
+plot(effect("Periodo_fecha", m3), main = "", xlab = "Period", ylab="Floral fidelity")
+plot(effect("shannon", m3), main = "", xlab = "Shannon Index", ylab="Floral fidelity")
 
 ggplot(seg2, aes(x=Periodo_fecha, y=revisita_binario, fill=Periodo_fecha)) + 
   geom_boxplot()
