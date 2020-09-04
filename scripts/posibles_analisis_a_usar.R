@@ -13,16 +13,26 @@ library(tidyr)
 library(vegan)
 
 cuad<- read.csv("./data/cuad_clean.csv")
-cuad_subset<- cuad %>% group_by(periodo, Bosque, sp) %>% summarise(abundancia = sum(flores))
-cuad_subset2<- cuad_subset %>% replace_with_na(replace = list(sp = "")) %>% drop_na(sp)
-cuad_wide<- spread(cuad_subset2, sp, abundancia)
-cuad_wide[is.na(cuad_wide)]<- 0
-shannon<- diversity(cuad_wide[-c(1:2)])
-key_shannon<- cbind(Periodo_fecha = cuad_wide$periodo, Bosque = cuad_wide[2], shannon = shannon)
-seg_shannon<- merge(seg_subset, key_shannon)
+
+#SHANNON-----
+#cuad_subset<- cuad %>% group_by(periodo, Bosque, sp) %>% summarise(abundancia = sum(flores))
+#cuad_subset2<- cuad_subset %>% replace_with_na(replace = list(sp = "")) %>% drop_na(sp)
+#cuad_wide<- spread(cuad_subset2, sp, abundancia)
+#cuad_wide[is.na(cuad_wide)]<- 0
+#shannon<- diversity(cuad_wide[-c(1:2)])
+#key_shannon<- cbind(Periodo_fecha = cuad_wide$periodo, Bosque = cuad_wide[2], shannon = shannon)
+#seg_shannon<- merge(seg_subset, key_shannon)
+
+#Riqueza de plantas
+cuad_drop_na<- cuad %>% replace_with_na(replace = list(sp = "")) %>% drop_na(sp)
+key_riqueza<- cuad_drop_na  %>% 
+  group_by(periodo, Bosque) %>% summarise(plant_richness=n_distinct(sp))
+colnames(key_riqueza)[1]<- "Periodo_fecha"
+seg_riqueza<- merge(seg_subset, key_riqueza)
+
 
 #plantas visitadas en cada vuelo para el offset
-seg_subset2<- seg_shannon %>% group_by(Codigo_vuelo) %>% mutate(visitas_por_vuelo = n())
+seg_subset2<- seg_riqueza %>% group_by(Codigo_vuelo) %>% mutate(visitas_por_vuelo = n())
 
 # #Calcular la media y la mediana de plantas visitadas en cada seguimiento
 # seg %>% group_by(Codigo_vuelo) %>% summarise(n=n()) %>% summarise(mean(n))
@@ -34,7 +44,7 @@ seg_subset2<- seg_shannon %>% group_by(Codigo_vuelo) %>% mutate(visitas_por_vuel
 #crea 344 líneas cuando deberían ser 332:
 #length(unique(seg_subset$Codigo_vuelo))
 #no sé cómo solucionarlo, se me ocurre quitar el periodo_hora del ddply, pero ya no se podría usar para otros análisis
-seg_table <- ddply(seg_subset2, c("Periodo_fecha", "Periodo_hora","Bosque","Codigo_vuelo", "Polinizador", "shannon", "visitas_por_vuelo"),
+seg_table <- ddply(seg_subset2, c("Periodo_fecha", "Periodo_hora","Bosque","Codigo_vuelo", "Polinizador", "plant_richness", "visitas_por_vuelo"),
                    summarise,
                      n_plant_sps = n_distinct(Planta))
 head(seg_table)
@@ -47,7 +57,7 @@ seg_table$Bosque<-as.factor(seg_table$Bosque)
 
 library(lme4)
 
-m1<-lmer(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), data=seg_table)
+m1<-lmer(n_plant_sps ~ Periodo_fecha + plant_richness + (1|Bosque) + (1|Polinizador), data=seg_table)
 summary(m1)
 car::Anova(m1)
 
@@ -56,13 +66,13 @@ library(DHARMa)
 
 simulationOutput <- simulateResiduals(fittedModel = m1, plot = T)
 
-m1b<-glmer.nb(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), data=seg_table)
+m1b<-glmer.nb(n_plant_sps ~ Periodo_fecha + plant_richness + (1|Bosque) + (1|Polinizador), data=seg_table)
 summary(m1b)
 car::Anova(m1b)
 
 simulationOutput <- simulateResiduals(fittedModel = m1b, plot = T)
 
-m1c<-glmer.nb(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), family="poisson", data=seg_table)
+m1c<-glmer(n_plant_sps ~ Periodo_fecha + plant_richness + (1|Bosque) + (1|Polinizador), family="poisson", data=seg_table)
 summary(m1c)
 car::Anova(m1c)
 
