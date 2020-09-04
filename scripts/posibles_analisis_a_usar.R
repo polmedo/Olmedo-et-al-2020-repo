@@ -51,6 +51,25 @@ m1<-lmer(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), d
 summary(m1)
 car::Anova(m1)
 
+
+library(DHARMa)
+
+simulationOutput <- simulateResiduals(fittedModel = m1, plot = T)
+
+m1b<-glmer.nb(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), data=seg_table)
+summary(m1b)
+car::Anova(m1b)
+
+simulationOutput <- simulateResiduals(fittedModel = m1b, plot = T)
+
+m1c<-glmer.nb(n_plant_sps ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), family="poisson", data=seg_table)
+summary(m1c)
+car::Anova(m1c)
+
+simulationOutput <- simulateResiduals(fittedModel = m1c, plot = T)
+
+
+
 p1 <- ggplot(seg_table, aes(x=Bosque, y=n_plant_sps, color=Polinizador))
 
 label<- c("First period", "Second period")
