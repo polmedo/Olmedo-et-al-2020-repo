@@ -120,23 +120,39 @@ pl1<- ggplot(seg_table2, aes(x = Periodo_fecha, y = mean_plant_sps)) +
   ylab("Mean visitated plant spp") + xlab("Period")
 pl1 + facet_grid(Bosque~Polinizador)
 #O mejor este, sin tantas gráficas
-pl2<- ggplot(seg_table2, aes(x = Periodo_fecha, y = mean_plant_sps, color=Polinizador)) +
-  geom_errorbar(aes(ymin = lower, ymax = higher), 
-                position = position_dodge2(width=0.2), width = 0.5, size  = 0.5) +
-  geom_point(shape = 20, size  = 1, 
-             position = position_dodge2(width = 0.5, padding = 0.5)) +
-  theme_bw() + theme(axis.title   = element_text(face  = "bold")) +
-  ylab("Mean visitated plant spp") + xlab("Period")
+library(RColorBrewer)
+period.lab<- c("Period 1", "Period 2")
+names(period.lab)<- c("1", "2")
+pl2<- ggplot(seg_table2, aes(x = Bosque, y = mean_plant_sps, color=Polinizador))
 
-pl2 + facet_wrap(~Bosque)
+pl2 + geom_errorbar(aes(ymin = lower, ymax = higher), 
+                    position = position_dodge2(width=0.2), width = 0.5, size  = 0.7) +
+  geom_point(shape = 20, size  = 1.2, 
+             position = position_dodge2(width = 0.5, padding = 0.5)) + 
+  scale_color_brewer(palette = "Dark2") + theme_bw() + 
+  theme(axis.title = element_text(face  = "bold"), 
+        legend.title = element_text(face = "bold"), strip.background = element_blank(), 
+        strip.text = element_text(face = "bold")) + 
+  labs(color="Pollinator") + ylab("Visited plant species richness") + 
+  xlab("Site")+ facet_wrap(~Periodo_fecha, labeller = labeller(Periodo_fecha=period.lab))
+
+#plot riqueza vs riqueza de visita
+seg_table4<- ddply(seg_table, c("plant_richness"), summarise, mean_plant_sps=mean(n_plant_sps), stdev=sd(n_plant_sps))
+seg_table4$lower<- (seg_table4$mean_plant_sps - seg_table4$stdev)
+seg_table4$higher<- (seg_table4$mean_plant_sps + seg_table4$stdev)
+pl6<- ggplot(seg_table4, aes(x = plant_richness, y = mean_plant_sps))
+pl6 + geom_errorbar(aes(ymin = lower, ymax = higher)) + 
+  geom_point() + xlab("Available plant richness") + ylab("Visited plant species richness") + 
+  theme(axis.title = element_text(face  = "bold"))
+
 
 #Diferencias de diversidad de plantas entre los dos períodos
-key_shannon$Bosque<- as.factor(key_shannon$Bosque)
-shannon_wide<- key_shannon %>%
-  pivot_wider(names_from = Periodo_fecha, values_from=shannon, names_prefix="periodo")
+#key_shannon$Bosque<- as.factor(key_shannon$Bosque)
+#shannon_wide<- key_shannon %>%
+  #pivot_wider(names_from = Periodo_fecha, values_from=shannon, names_prefix="periodo")
 
-t_test_shannon<- t.test(shannon_wide$periodo1, shannon_wide$periodo2, paired=TRUE)
-t_test_shannon
+#t_test_shannon<- t.test(shannon_wide$periodo1, shannon_wide$periodo2, paired=TRUE)
+#t_test_shannon
 
 p2<- ggplot(key_shannon, aes(x=Periodo_fecha, y=shannon, color=Bosque)) + 
   geom_point() + geom_line(aes(group=Bosque)) + 
@@ -169,16 +185,26 @@ seg2<- seg_subset2 %>% group_by(Codigo_vuelo) %>% mutate(revisita_binario= ifels
 str(seg2)
 seg2$Periodo_fecha<-as.factor(seg2$Periodo_fecha)
 seg2$Bosque<-as.factor(seg2$Bosque)
-m3<-glmer(revisita_binario ~ Periodo_fecha + shannon + (1|Bosque) + (1|Polinizador), family="binomial", data=seg2)
-#ESTA FUNCIÓN DEVUELVE ERROR
-#Error in (function (fr, X, reTrms, family, nAGQ = 1L, verbose = 0L, maxit = 100L,  : 
-#(maxstephalfit) PIRLS step-halvings failed to reduce deviance in pwrssUpdate
+m3<-glmer(revisita_binario ~ Periodo_fecha + plant_richness + (1|Bosque) + (1|Polinizador), family="binomial", data=seg2)
+
 summary(m3)
 library(effects)
 plot(allEffects(m3))
 plot(effect("Periodo_fecha", m3), main = "", xlab = "Period", ylab="Floral fidelity")
 plot(effect("shannon", m3), main = "", xlab = "Shannon Index", ylab="Floral fidelity")
 
-ggplot(seg2, aes(x=Periodo_fecha, y=revisita_binario, fill=Periodo_fecha)) + 
-  geom_boxplot()
-
+plot.lab<- c("Plot 1", "Plot 2", "Plot 3", "Plot 4", "Plot 5")
+names(plot.lab)<- c("1", "2", "3", "4", "5")
+pl.fid<- ggplot(seg_fidelity, aes(x = Periodo_fecha, 
+                                  y = mean_plant_sps, color=Polinizador))
+pl.fid + geom_point(shape = 20, size  = 1.5, 
+                    position = position_dodge2(width = 0.4, padding = 0.5)) +  
+  scale_color_brewer(palette = "Dark2") + 
+  facet_wrap(~Bosque, nrow = 1, labeller = labeller(Bosque=plot.lab)) + coord_fixed(5) + 
+  theme_bw() + theme(axis.title = element_text(face  = "bold", size = 9), 
+                     legend.title = element_text(face = "bold", size = 9), 
+                     legend.text = element_text(size = 8), 
+                     strip.background = element_blank(), 
+                     strip.text = element_text(face = "bold", size = 8)) +  
+  labs(color="Pollinator") + ylab("Floral fidelity") +  xlab("Period")+ 
+  scale_y_continuous(expand = c(0.05, 0.05))

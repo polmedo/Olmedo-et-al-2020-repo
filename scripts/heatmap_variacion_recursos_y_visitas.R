@@ -68,3 +68,25 @@ p3 + ggtitle("Shannon Index variation") +
         panel.grid = element_blank(), strip.background = element_blank(), 
           strip.text = element_text(face = "bold", size=15)) + 
   scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0))
+
+#riqueza de plantas
+
+cuad_drop_na<- cuad %>% replace_with_na(replace = list(sp="")) %>% drop_na(sp)
+cuad_riqueza<- cuad_drop_na %>% 
+  group_by(periodo, Bosque, xy, x, y) %>% summarise(riqueza = n_distinct(sp))
+cuad_riqueza_wide<- cuad_riqueza %>% 
+  pivot_wider(names_from = c(periodo), values_from = riqueza, names_prefix = "periodo")
+cuad_riqueza_wide$periodo1[is.na(cuad_riqueza_wide$periodo1)]<- 0
+cuad_riqueza_wide$periodo2[is.na(cuad_riqueza_wide$periodo2)]<- 0
+cuad_riqueza_wide$dif_periodos<- (cuad_riqueza_wide$periodo2 - cuad_riqueza_wide$periodo1)
+p4<- ggplot(cuad_riqueza_wide, aes(x=x, y=y, fill=dif_periodos))
+p4 + ggtitle("Plant species richness variation") + 
+  geom_tile() + scale_fill_gradient2(midpoint = 0, low = "red3", mid = "white", 
+                                     high = "green3", trans="pseudo_log") + 
+  coord_equal() + facet_wrap(~Bosque, nrow = 1) + 
+  theme(plot.title = element_text(face = "bold", size = 18, hjust = 0.5), 
+        axis.title = element_text(size = 13), legend.title.align = 0.1, 
+        legend.title = element_blank(), panel.background = element_rect(fill = "gray85"), 
+        panel.grid = element_blank(), strip.background = element_blank(), 
+        strip.text = element_text(face = "bold", size=15)) + 
+  scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0))
