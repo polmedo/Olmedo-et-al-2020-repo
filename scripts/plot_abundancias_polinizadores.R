@@ -20,11 +20,12 @@ seg_subset2$Fecha <- as.Date(seg_subset2$Fecha)
 
 head(seg_subset2)
 
+library(RColorBrewer)
 
 pl<-ggplot(seg_subset2, aes(x=Fecha, y=n, fill=Polinizador)) +
-  geom_bar(stat = "identity",  position="dodge") +scale_fill_brewer(palette="Set3") +
+  geom_bar(stat = "identity",  position="dodge") + scale_fill_brewer(palette="Dark2") +
   geom_smooth(aes(x=Fecha, y=n, colour=Polinizador), se=F, method="loess", lwd=0.7) +
-  scale_colour_brewer(palette="Set3") 
+  scale_colour_brewer(palette="Dark2") 
 
 
 pl
