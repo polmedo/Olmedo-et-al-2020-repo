@@ -78,7 +78,7 @@ car::Anova(m1c)
 
 simulationOutput <- simulateResiduals(fittedModel = m1c, plot = T)
 
-
+AIC(m1, m1b, m1c)
 
 p1 <- ggplot(seg_table, aes(x=Bosque, y=n_plant_sps, color=Polinizador))
 
