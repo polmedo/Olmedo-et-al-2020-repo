@@ -28,7 +28,7 @@ cuad_drop_na<- cuad %>% replace_with_na(replace = list(sp = "")) %>% drop_na(sp)
 key_riqueza<- cuad_drop_na  %>% 
   group_by(periodo, Bosque) %>% summarise(plant_richness=n_distinct(sp))
 colnames(key_riqueza)[1]<- "Periodo_fecha"
-seg_riqueza<- merge(seg_subset, key_riqueza)
+seg_riqueza<- join(seg_subset, key_riqueza)
 
 
 #plantas visitadas en cada vuelo para el offset
@@ -192,6 +192,10 @@ library(effects)
 plot(allEffects(m3))
 plot(effect("Periodo_fecha", m3), main = "", xlab = "Period", ylab="Floral fidelity")
 plot(effect("shannon", m3), main = "", xlab = "Shannon Index", ylab="Floral fidelity")
+
+seg_fidelity<- seg2 %>% 
+  group_by(Periodo_fecha, Bosque, Polinizador) %>% 
+  summarise(mean_plant_sps = mean(revisita_binario, na.rm=TRUE))
 
 plot.lab<- c("Plot 1", "Plot 2", "Plot 3", "Plot 4", "Plot 5")
 names(plot.lab)<- c("1", "2", "3", "4", "5")
